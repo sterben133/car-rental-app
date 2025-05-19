@@ -3,7 +3,30 @@ const router = express.Router();
 const sqlite3 = require('sqlite3').verbose();
 const db = new sqlite3.Database('./data/cars.db');
 
+// 首页渲染
 router.get('/', (req, res) => {
+  db.all("SELECT * FROM cars", [], (err, rows) => {
+    if (err) return res.send("DB Error");
+    res.render('home', { cars: rows, filters: {} });
+  });
+});
+
+// 搜索建议 API
+router.get('/api/suggest', (req, res) => {
+  const q = req.query.q?.toLowerCase() || '';
+  db.all(`
+    SELECT DISTINCT brand || ' ' || model AS keyword 
+    FROM cars 
+    WHERE LOWER(brand || ' ' || model || ' ' || type || ' ' || fuel) LIKE ?`,
+    [`%${q}%`],
+    (err, rows) => {
+      if (err) return res.json([]);
+      res.json(rows.map(r => r.keyword));
+    });
+});
+
+// 筛选与搜索 AJAX API
+router.get('/api/filter', (req, res) => {
   const { keyword = '', brand = '', type = '' } = req.query;
   let query = "SELECT * FROM cars WHERE 1=1";
   let params = [];
@@ -22,8 +45,8 @@ router.get('/', (req, res) => {
   }
 
   db.all(query, params, (err, rows) => {
-    if (err) return res.send("DB Error");
-    res.render('home', { cars: rows, filters: req.query });
+    if (err) return res.json([]);
+    res.json(rows);
   });
 });
 

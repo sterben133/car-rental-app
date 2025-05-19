@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <title>CarRental</title>
   <link rel="stylesheet" href="/styles.css">
@@ -25,9 +25,6 @@
       border-radius: 6px;
     }
     header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       padding: 1em 0;
     }
     header h1 a {
@@ -35,22 +32,24 @@
       font-size: 1.5em;
       color: #333;
     }
+    ul {
+      z-index: 100;
+    }
+    ul li:hover {
+      background: #eee;
+    }
   </style>
 </head>
 <body>
   <header>
     <h1><a href="/">CarRental</a></h1>
-    <form method="get" action="/">
-      <input type="text" name="keyword" placeholder="Search cars..." />
-      <button type="submit">Search</button>
-    </form>
   </header>
 
   <h2>Find Your Perfect Rental Car</h2>
 
-  <!-- 搜索与筛选表单 -->
-  <form method="get" action="/">
-    <input name="keyword" value="<%= filters.keyword || '' %>" placeholder="Keyword..." />
+  <!-- Search and Filter Form -->
+  <form onsubmit="event.preventDefault(); fetchCars();">
+    <input name="keyword" placeholder="Keyword..." />
     <select name="brand">
       <option value="">All Brands</option>
       <option value="Toyota">Toyota</option>
@@ -66,25 +65,88 @@
       <option value="SUV">SUV</option>
       <option value="truck">Truck</option>
     </select>
-    <button type="submit">Apply Filters</button>
+    <button type="button" onclick="fetchCars()">Apply Filters</button>
   </form>
 
-  <!-- 车辆展示 -->
-  <div class="grid">
-    <% cars.forEach(car => { %>
-      <div class="card">
-        <h3><%= car.brand %> <%= car.model %></h3>
-        <img src="/images/<%= car.image %>" alt="<%= car.brand %> <%= car.model %>">
-        <p><strong>$<%= car.price %>/day</strong></p>
-        <p>Type: <%= car.type %></p>
-        <p>Fuel: <%= car.fuel %></p>
-        <% if (car.available) { %>
-          <a href="/reserve/<%= car.id %>">Rent Now</a>
-        <% } else { %>
-          <button disabled>Not Available</button>
-        <% } %>
-      </div>
-    <% }) %>
-  </div>
+  <!-- Vehicle Display Grid -->
+  <div class="grid"></div>
+
+  <script>
+    const keywordInput = document.querySelector('input[name="keyword"]');
+    const brandSelect = document.querySelector('select[name="brand"]');
+    const typeSelect = document.querySelector('select[name="type"]');
+    const grid = document.querySelector('.grid');
+
+    // Auto-suggest dropdown
+    let suggestBox;
+    keywordInput.addEventListener('input', () => {
+      const q = keywordInput.value.trim();
+      if (q.length < 1) return;
+      fetch(`/api/suggest?q=${encodeURIComponent(q)}`)
+        .then(res => res.json())
+        .then(suggestions => {
+          if (suggestBox) suggestBox.remove();
+          suggestBox = document.createElement('ul');
+          suggestBox.style.position = 'absolute';
+          suggestBox.style.background = '#fff';
+          suggestBox.style.border = '1px solid #ccc';
+          suggestBox.style.listStyle = 'none';
+          suggestBox.style.padding = '0';
+          suggestBox.style.margin = '0';
+          suggestBox.style.width = keywordInput.offsetWidth + 'px';
+          suggestions.forEach(s => {
+            const li = document.createElement('li');
+            li.textContent = s;
+            li.style.padding = '4px';
+            li.style.cursor = 'pointer';
+            li.addEventListener('click', () => {
+              keywordInput.value = s;
+              suggestBox.remove();
+              fetchCars();
+            });
+            suggestBox.appendChild(li);
+          });
+          keywordInput.parentNode.appendChild(suggestBox);
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (suggestBox && !suggestBox.contains(e.target)) suggestBox.remove();
+    });
+
+    // AJAX fetch
+    function fetchCars() {
+      const query = new URLSearchParams({
+        keyword: keywordInput.value,
+        brand: brandSelect.value,
+        type: typeSelect.value
+      });
+      fetch(`/api/filter?${query}`)
+        .then(res => res.json())
+        .then(cars => {
+          grid.innerHTML = '';
+          cars.forEach(car => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+              <h3>${car.brand} ${car.model}</h3>
+              <img src="/images/${car.image}" alt="${car.brand} ${car.model}" />
+              <p><strong>$${car.price}/day</strong></p>
+              <p>Type: ${car.type}</p>
+              <p>Fuel: ${car.fuel}</p>
+              ${car.available
+                ? `<a href="/reserve/${car.id}">Rent Now</a>`
+                : `<button disabled>Not Available</button>`}
+            `;
+            grid.appendChild(card);
+          });
+        });
+    }
+
+    [brandSelect, typeSelect].forEach(el => el.addEventListener('change', fetchCars));
+
+    // Initial load
+    fetchCars();
+  </script>
 </body>
 </html>
