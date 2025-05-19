@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+</html>
+<html>
+<head>
+  <title>Reserve</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <!-- 顶部导航栏 -->
+  <header style="display: flex; align-items: center; margin-bottom: 1em;">
+    <h1><a href="/" style="text-decoration: none; color: black;">CarRental</a></h1>
+  </header>
+
+  <h1>Reserve Your Vehicle</h1>
+
+  <!-- 车辆信息 -->
+  <div>
+    <h2><%= car.brand %> <%= car.model %></h2>
+    <p>Year: <%= car.year %> | Type: <%= car.type %></p>
+    <p>Fuel: <%= car.fuel %> | Transmission: <%= car.transmission %></p>
+    <p>Price per day: $<%= car.price %></p>
+  </div>
+
+  <!-- 表单 -->
+  <form method="POST">
+    <input name="fullname" placeholder="Full Name" required />
+    <input name="email" placeholder="Email" required />
+    <input name="phone" placeholder="04xx xxx xxx" required 
+       pattern="^0[2-478]\s?\d{4}\s?\d{4}$" 
+       title="Please enter a valid Australian phone number (e.g. 0412 345 678 or 0298764321)" />
+    <input name="license" placeholder="e.g. 12345678 or Q1234567" required
+       pattern="^[A-Za-z0-9]{6,10}$"
+       title="Enter a valid Australian driver's license number (6–10 letters or numbers)" />
+    <input name="date" type="date" required />
+    <input name="days" type="number" min="1" value="1" required />
+    <button type="submit">Complete Reservation</button>
+  </form>
+</body>
+</html>
